@@ -1,0 +1,17 @@
+import json
+
+def import_map():
+  run = {
+    "znl0vjvy" : "2026-08-29T11:54:07Z",
+    "zg0g9eem" : "2026-08-29T11:45:20Z",
+    "mrwgp27y" : "2026-08-29T11:31:47Z",
+    "zqo0rd5y" : "2026-08-29T11:25:46Z",
+    "me57rj9m" : "2026-08-29T10:50:54Z",
+    "zpvxvorz" : "2026-08-29T10:49:53Z",
+    "y84j32nz" : "2026-08-29T10:38:44Z",
+    "zxr2p4gz" : "2026-08-29T10:36:05Z",
+    "znloqk3y" : "2026-08-29T10:32:56Z",
+  }
+  with open("deprecated-run.json", "w") as file:
+    json.dump(run, file)
+#import_map()
