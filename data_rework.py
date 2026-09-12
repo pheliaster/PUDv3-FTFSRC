@@ -4,7 +4,7 @@ import time, datetime
 from copy import deepcopy
 
 NOW_DATE = datetime.datetime.today()
-TIME_MARGIN_IN_HOURS = 6
+TIME_MARGIN_IN_HOURS: int = 24
 
 def src_time_to_datetime(txt):
   """
