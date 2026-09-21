@@ -5,6 +5,7 @@ from copy import deepcopy
 
 NOW_DATE = datetime.datetime.today()
 TIME_MARGIN_IN_HOURS: int = 24
+REMOVE_DUP_WR_DATE = True
 
 def src_time_to_datetime(txt):
   """
@@ -395,9 +396,12 @@ def get_player_wrc_over_time(valid_runs: list, datas: list, all_players: list):
               placeholder[f"{p}-highest"] = active_player_list[all_players_name.index(p)][f"{p}-highest"]
               current_dpoint_player_list[all_players_name.index(p)][f"{p}"] = value
 
-      if placeholder != previous_dpoint_data:
+      if REMOVE_DUP_WR_DATE :
+        if placeholder != previous_dpoint_data:
+          player_stats_overtime.append({"date": f"{current_datepoint}"} | placeholder)
+        previous_dpoint_data = placeholder
+      else:
         player_stats_overtime.append({"date": f"{current_datepoint}"} | placeholder)
-      previous_dpoint_data = placeholder
 
   all_players = sorted(all_players, key=lambda p: p["highest_wr_count"], reverse=True)   
 
