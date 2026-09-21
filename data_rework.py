@@ -358,12 +358,15 @@ def get_player_wrc_over_time(valid_runs: list, datas: list, all_players: list):
       obsolete_player_checklist = []
       category_run_count = []
       previous_time_list = []
+      placeholder_list = []
       placeholder = {}
 
       for run in active_run_list:
         deprecated_date = src_time_to_datetime(run["deprecated_date"])
         if deprecated_date < current_datepoint:
           continue
+        else :
+          placeholder_list.append(run)
 
         if run["category_id"] not in category_checklist:
           category_checklist.append(run["category_id"])
@@ -402,6 +405,8 @@ def get_player_wrc_over_time(valid_runs: list, datas: list, all_players: list):
         previous_dpoint_data = placeholder
       else:
         player_stats_overtime.append({"date": f"{current_datepoint}"} | placeholder)
+
+      active_run_list = placeholder_list
 
   all_players = sorted(all_players, key=lambda p: p["highest_wr_count"], reverse=True)   
 
