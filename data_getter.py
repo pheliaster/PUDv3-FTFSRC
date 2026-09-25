@@ -2,6 +2,7 @@ import time
 import asyncio
 import aiohttp
 import json
+from random import randint
 
 start = time.perf_counter()
 
@@ -97,7 +98,7 @@ def main():
     #    json.dump(all_platforms_data, file) 
 
     all_registered_players_info = [[],[],[]]
-    exception_name = ["SkittlesCat", "Newbe"]
+    exception_name = ["SkittlesCat", "Newbe", "CWANIACZKA"]
     for p in all_reg_players_data:
         all_registered_players_info[0].append(p["id"])
         all_registered_players_info[1].append(p["names"]["international"])
@@ -106,7 +107,7 @@ def main():
         else:
             all_registered_players_info[2].append("None")
     for name in exception_name :
-        all_registered_players_info[0].append("0x111111")
+        all_registered_players_info[0].append(f"e-{randint(10000000, 99999999)}")
         all_registered_players_info[1].append(name)
         all_registered_players_info[2].append("None")
 

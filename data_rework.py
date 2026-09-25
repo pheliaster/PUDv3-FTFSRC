@@ -26,6 +26,60 @@ def time_to_text(time):
 def time_to_text_2(time):
   return f"{check_time_in_text(time//3600)}h{check_time_in_text(time//60 - (time//3600)*60)}m{check_time_in_text(time - ((time//3600)*3600 + (time//60 - (time//3600)*60)*60))}s"
 
+def text_to_number(value):
+  if "One" in value:
+    return 1
+  elif "Two" in value:
+    return 2
+  elif "Three" in value:
+    return 3
+  elif "Four" in value:
+    return 4
+  else:
+    return -1
+
+def simplify_run_to_format(run):
+  return (run["category_name"] + " at " + run["time_in_format"])
+
+def set_fastest_time(ctype, count, player, run):
+  if ctype == False and count == 1 and run["time_in_seconds"] < player["fastest_1_survivor_run"]["time_in_seconds"]:
+    player["fastest_1_survivor_run"] = run
+    player["fastest_1_survivor_run_in_seconds"] = run["time_in_seconds"]
+    player["fastest_1_survivor_run_in_simple_format"] = simplify_run_to_format(run)
+  elif ctype == False and count == 2 and run["time_in_seconds"] < player["fastest_2_survivors_run"]["time_in_seconds"]:
+    player["fastest_2_survivors_run"] = run
+    player["fastest_2_survivors_run_in_seconds"] = run["time_in_seconds"]
+    player["fastest_2_survivors_run_in_simple_format"] = simplify_run_to_format(run)
+  elif ctype == False and count == 3 and run["time_in_seconds"] < player["fastest_3_survivors_run"]["time_in_seconds"]:
+    player["fastest_3_survivors_run"] = run
+    player["fastest_3_survivors_run_in_seconds"] = run["time_in_seconds"]
+    player["fastest_3_survivors_run_in_simple_format"] = simplify_run_to_format(run)
+  elif ctype == False and count == 4 and run["time_in_seconds"] < player["fastest_4_survivors_run"]["time_in_seconds"]:
+    player["fastest_4_survivors_run"] = run
+    player["fastest_4_survivors_run_in_seconds"] = run["time_in_seconds"]
+    player["fastest_4_survivors_run_in_simple_format"] = simplify_run_to_format(run)
+  elif ctype == True and count == 1 and run["time_in_seconds"] < player["fastest_1_capture_run"]["time_in_seconds"]:
+    player["fastest_1_capture_run"] = run
+    player["fastest_1_capture_run_in_seconds"] = run["time_in_seconds"]
+    player["fastest_1_capture_run_in_simple_format"] = simplify_run_to_format(run)
+  elif ctype == True and count == 2 and run["time_in_seconds"] < player["fastest_2_captures_run"]["time_in_seconds"]:
+    player["fastest_2_captures_run"] = run
+    player["fastest_2_captures_run_in_seconds"] = run["time_in_seconds"]
+    player["fastest_2_captures_run_in_simple_format"] = simplify_run_to_format(run)
+  elif ctype == True and count == 3 and run["time_in_seconds"] < player["fastest_3_captures_run"]["time_in_seconds"]:
+    player["fastest_3_captures_run"] = run
+    player["fastest_3_captures_run_in_seconds"] = run["time_in_seconds"]
+    player["fastest_3_captures_run_in_simple_format"] = simplify_run_to_format(run)
+  elif ctype == True and count == 4 and run["time_in_seconds"] < player["fastest_4_captures_run"]["time_in_seconds"]:
+    player["fastest_4_captures_run"] = run
+    player["fastest_4_captures_run_in_seconds"] = run["time_in_seconds"]
+    player["fastest_4_captures_run_in_simple_format"] = simplify_run_to_format(run)
+  else:
+    pass
+
+  return player
+
+
 def create_new_reworked_run_data(run):
     """
       - "status" can only be in 6 states ["pending", "verified", "rejected", "deprecated", "orphaned", "ignored"]
@@ -35,6 +89,8 @@ def create_new_reworked_run_data(run):
     single_run["run_id"] = run["id"]
     single_run["category_name"] = ""
     single_run["category_id"] = ""
+    single_run["category_type"] = False
+    single_run["count"] = -1
     single_run["time_in_format"] = time_to_text(run["times"]["primary_t"])
     single_run["time_in_seconds"] = run["times"]["primary_t"]
     single_run["placement"] = 0
@@ -76,20 +132,36 @@ def create_new_reworked_player_data(player):
     single_player["beast_wrs"] = 0
     single_player["beast_wrs_list"] = []
     single_player["beast_wrs_list_in_simple_format"] = []
-    single_player["fastest_survivor_run"] = {"time_in_seconds": 900}
-    single_player["fastest_beast_run"] = {"time_in_seconds": 900}
-    single_player["fastest_survivor_run_in_seconds"] = 0
-    single_player["fastest_beast_run_in_seconds"] = 0
-    single_player["fastest_survivor_run_in_simple_format"] = "N/A"
-    single_player["fastest_beast_run_in_simple_format"] = "N/A"
+    single_player["fastest_1_survivor_run"] = {"time_in_seconds": 900}
+    single_player["fastest_2_survivors_run"] = {"time_in_seconds": 900}
+    single_player["fastest_3_survivors_run"] = {"time_in_seconds": 900}
+    single_player["fastest_4_survivors_run"] = {"time_in_seconds": 900}
+    single_player["fastest_1_capture_run"] = {"time_in_seconds": 900}
+    single_player["fastest_2_captures_run"] = {"time_in_seconds": 900}
+    single_player["fastest_3_captures_run"] = {"time_in_seconds": 900}
+    single_player["fastest_4_captures_run"] = {"time_in_seconds": 900}
+    single_player["fastest_1_survivor_run_in_seconds"] = 0
+    single_player["fastest_2_survivors_run_in_seconds"] = 0
+    single_player["fastest_3_survivors_run_in_seconds"] = 0
+    single_player["fastest_4_survivors_run_in_seconds"] = 0
+    single_player["fastest_1_capture_run_in_seconds"] = 0
+    single_player["fastest_2_captures_run_in_seconds"] = 0
+    single_player["fastest_3_captures_run_in_seconds"] = 0
+    single_player["fastest_4_captures_run_in_seconds"] = 0
+    single_player["fastest_1_survivor_run_in_simple_format"] = "N/A"
+    single_player["fastest_2_survivors_run_in_simple_format"] = "N/A"
+    single_player["fastest_3_survivors_run_in_simple_format"] = "N/A"
+    single_player["fastest_4_survivors_run_in_simple_format"] = "N/A"
+    single_player["fastest_1_capture_run_in_simple_format"] = "N/A"
+    single_player["fastest_2_captures_run_in_simple_format"] = "N/A"
+    single_player["fastest_3_captures_run_in_simple_format"] = "N/A"
+    single_player["fastest_4_captures_run_in_simple_format"] = "N/A"
     return single_player
-
 
 def process_runs_and_players(datas, extras):
   """
     WARNING!!! All Players Data MUST NOT be sorted in any mean in order to align with the index of the player name and id list that is taken originally
   """
-
   all_runs = datas[0]
   all_players_id = datas[1][0]
   all_players_name = datas[1][1]
@@ -124,6 +196,7 @@ def process_runs_and_players(datas, extras):
           new_run["category_id"] = "0x11111111"
           new_run["category_name"] = "UNKNOWN NAME"
           new_run["status"].append("orphaned")
+        new_run["category_type"] = False
       elif run["category"] == "n2yg8772":
         if "9l774k9l" in run["values"] and "yn259g0n" in run["values"]:
           new_run["category_id"] = "n2yg8772" + run["values"]["9l774k9l"] + run["values"]["yn259g0n"]
@@ -132,11 +205,17 @@ def process_runs_and_players(datas, extras):
           new_run["category_id"] = "0x11111111"
           new_run["category_name"] = "UNKNOWN NAME"
           new_run["status"].append("orphaned")
+        new_run["category_type"] = True
       elif run["category"] == "wk65l5e2":
         new_run["category_id"] = run["values"]["onvymwrn"] + run["values"]["ql695jxl"] + run["values"]["ylpk42v8"]
         new_run["category_name"] = all_main_categories_name[all_main_categories_id.index(new_run["category_id"])]
+        if "q6504o3l" in new_run["category_id"]:
+          new_run["category_type"] = True
+        else:
+          new_run["category_type"] = False
       elif run["category"] == "7kjp5pxk":
         new_run["status"].append("deprecated")
+        new_run["category_type"] = False
         if "wlewoo4l" in run["values"] and "38dooe0l" in run["values"]:
           new_run["category_id"] = run["values"]["wlewoo4l"] + run["values"]["38dooe0l"]
           new_run["category_name"] = all_old_categories_name[all_old_categories_id.index(new_run["category_id"])]
@@ -150,6 +229,7 @@ def process_runs_and_players(datas, extras):
           new_run["status"].append("orphaned")
       elif run["category"] == "q25q0782":
         new_run["status"].append("deprecated")
+        new_run["category_type"] = True
         if "wl31kkv8" in run["values"] and "gnx003xn" in run["values"]:
           new_run["category_id"] = run["values"]["wl31kkv8"] + run["values"]["gnx003xn"]
           new_run["category_name"] = all_old_categories_name[all_old_categories_id.index(new_run["category_id"])]
@@ -163,7 +243,7 @@ def process_runs_and_players(datas, extras):
           new_run["status"].append("orphaned")
       else:
         new_run["category_id"] = run["category"]
-        new_run["category_name"] = "OTHERS"
+        new_run["category_name"] = "(VIP) MAP_NAME"
         new_run["status"].append("ignored")
 
       if run["status"]["status"] == "new" :
@@ -181,6 +261,8 @@ def process_runs_and_players(datas, extras):
         if "deprecated" in new_run["status"]:
           new_run["deprecated_date"] = run["status"]["verify-date"] + " (N/A)"
           unknown_verified_deprecated_date_count += 1
+
+      new_run["count"] = text_to_number(new_run["category_name"])
 
       for player in run["players"]:
         if player["rel"] == "user":
@@ -278,37 +360,31 @@ def get_current_data(reworked: list, datas: list):
           player_info["total_run_time"] += run["time_in_seconds"]
           player_info["total_run_time_in_format"] = time_to_text_2(player_info["total_run_time"])
           player_info["players_runs"].append(run)
-          player_info["players_runs_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
+          player_info["players_runs_in_simple_format"].append(simplify_run_to_format(run))
           if run["placement"] == 1:
             player_info["total_1st_place"] += 1
             player_info["1st_place_runs"].append(run)
-            player_info["1st_place_runs_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
+            player_info["1st_place_runs_in_simple_format"].append(simplify_run_to_format(run))
           elif run["placement"] == 2:
             player_info["total_2nd_place"] += 1
             player_info["2nd_place_runs"].append(run)
-            player_info["2nd_place_runs_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
+            player_info["2nd_place_runs_in_simple_format"].append(simplify_run_to_format(run))
           elif run["placement"] == 3:
             player_info["total_3rd_place"] += 1
             player_info["3rd_place_runs"].append(run)
-            player_info["3rd_place_runs_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
+            player_info["3rd_place_runs_in_simple_format"].append(simplify_run_to_format(run))
           if "7dg6l4gk" in run["category_id"] or "qj70zmeq" in run["category_id"] :
+            set_fastest_time(run["category_type"], run["count"], player_info, run)
             if run["placement"] == 1:
               player_info["survivor_wrs"] += 1
               player_info["survivor_wrs_list"].append(run)
-              player_info["survivor_wrs_list_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
-            if player_info["total_run_count"] <= 1 or run["time_in_seconds"] < player_info["fastest_survivor_run"]["time_in_seconds"]:
-              player_info["fastest_survivor_run"] = run
-              player_info["fastest_survivor_run_in_seconds"] = run["time_in_seconds"]
-              player_info["fastest_survivor_run_in_simple_format"] = run["category_name"] + " at " + run["time_in_format"]
+              player_info["survivor_wrs_list_in_simple_format"].append(simplify_run_to_format(run))
           else:
+            set_fastest_time(run["category_type"], run["count"], player_info, run)
             if run["placement"] == 1:
               player_info["beast_wrs"] += 1
               player_info["beast_wrs_list"].append(run)
-              player_info["beast_wrs_list_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
-            if player_info["total_run_count"] <= 1 or run["time_in_seconds"] < player_info["fastest_beast_run"]["time_in_seconds"]:
-              player_info["fastest_beast_run"] = run
-              player_info["fastest_beast_run_in_seconds"] = run["time_in_seconds"]
-              player_info["fastest_beast_run_in_simple_format"] = run["category_name"] + " at " + run["time_in_format"] 
+              player_info["beast_wrs_list_in_simple_format"].append(simplify_run_to_format(run))
 
           all_players[all_players_name.index(player)] = player_info
 

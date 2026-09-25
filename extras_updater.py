@@ -153,7 +153,7 @@ def main():
         else:
             old_to_new_match.append(old_ids[old_names.index(n)])
 
-    exception_names = ["Jenna_0134", "SkittlesCat", "Newbe"]
+    exception_names = ["Jenna_0134", "SkittlesCat", "Newbe", "CWANIACZKA"]
 
     with open("x-redate-requested-runs.json", 'r', encoding='utf-8') as file:
       all_redate_needed_runs = json.load(file)
