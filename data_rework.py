@@ -82,7 +82,7 @@ def set_fastest_time(ctype, count, player, run):
 
 def create_new_reworked_run_data(run):
     """
-      - "status" can only be in 6 states ["pending", "verified", "rejected", "deprecated", "orphaned", "ignored"]
+      - "status" can only be in 6 states ["pending", "verified", "rejected", "deprecated", "orphaned", "VIP" ,"ignored"]
     """
     single_run = {}
     single_run["position"] = 0
@@ -172,9 +172,11 @@ def process_runs_and_players(datas, extras):
   all_old_categories_id = extras[2]
   all_old_categories_name = extras[3]
   fixed_old_to_main_id = extras[4]
-  all_deprecated_runs = extras[5]
-  all_revalidated_runs = extras[6]
-  exception_username = extras[7]
+  all_VIP_ids = extras[5]
+  all_VIP_names = extras[6]
+  all_deprecated_runs = extras[7]
+  all_revalidated_runs = extras[8]
+  exception_username = extras[9]
 
   all_reworked_runs = []
   all_reworked_players = []
@@ -242,9 +244,18 @@ def process_runs_and_players(datas, extras):
           new_run["category_name"] = "UNKNOWN NAME"
           new_run["status"].append("orphaned")
       else:
-        new_run["category_id"] = run["category"]
-        new_run["category_name"] = "(VIP) MAP_NAME"
-        new_run["status"].append("ignored")
+        if "2lgr2o6n" in run["values"] and "5lyjjegl" in run["values"]:
+          new_run["category_id"] = run["values"]["78965r58"] + run["values"]["2lgr2o6n"] + run["values"]["5lyjjegl"]
+          new_run["category_name"] = "(VIP) " + all_VIP_names[all_VIP_ids.index(new_run["category_id"])]
+          new_run["status"].append("VIP")
+          if "z19ymjkl" in new_run["category_id"]:
+            new_run["category_type"] = True
+          else:
+            new_run["category_type"] = False
+        else :
+          new_run["category_id"] = "0x11111111"
+          new_run["category_name"] = "UNKNOWN NAME"
+          new_run["status"].append("orphaned")
 
       if run["status"]["status"] == "new" :
         new_run["status"] = "pending"
@@ -262,6 +273,13 @@ def process_runs_and_players(datas, extras):
           new_run["deprecated_date"] = run["status"]["verify-date"] + " (N/A)"
           unknown_verified_deprecated_date_count += 1
 
+      if new_run["run_id"] in all_deprecated_runs:
+        new_run["deprecated_date"] = all_deprecated_runs[f"{new_run["run_id"]}"]
+        new_run["status"].append("deprecated")
+        unknown_verified_deprecated_date_count -= 1
+      if new_run["run_id"] in all_revalidated_runs:
+        new_run["validated_date"] = all_revalidated_runs[f"{new_run["run_id"]}"]
+
       new_run["count"] = text_to_number(new_run["category_name"])
 
       for player in run["players"]:
@@ -271,12 +289,6 @@ def process_runs_and_players(datas, extras):
           new_run["players"].append(player["name"])
         else :
           new_run["players"].append(player["name"] + "(guest)")
-
-        if new_run["run_id"] in all_deprecated_runs:
-          new_run["deprecated_date"] = all_deprecated_runs[f"{new_run["run_id"]}"]
-          unknown_verified_deprecated_date_count -= 1
-        if new_run["run_id"] in all_revalidated_runs:
-          new_run["validated_date"] = all_revalidated_runs[f"{new_run["run_id"]}"]
 
       if "ignored" in new_run["status"] or "deprecated" in new_run["status"]:
         new_run["placement"] = "deprecated"
@@ -320,6 +332,7 @@ def get_current_data(reworked: list, datas: list):
   for run in all_runs:
     if "ignored" in run["status"] or "orphaned" in run["status"] or "rejected" in run["status"] or "pending" in run["status"]:
       continue
+    
     if "deprecated" in run["status"]:
       for player in run["players"]:
           if "(guest)" not in player:
@@ -352,6 +365,19 @@ def get_current_data(reworked: list, datas: list):
         run["placement"] -= 1
       previous_time_list[c_index] = run["time_in_seconds"]
 
+    if "VIP" in run["status"]:
+      for player in run["players"]:
+          if "(guest)" not in player:
+            player_info = all_players[all_players_name.index(player)]
+            player_info["total_run_count"] += 1
+            player_info["total_run_time"] += run["time_in_seconds"]
+            player_info["total_run_time_in_format"] = time_to_text_2(player_info["total_run_time"])
+            player_info["players_runs"].append(run)
+            player_info["players_runs_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
+            all_players[all_players_name.index(player)] = player_info
+      all_valid_runs.append(run)
+      continue
+
     all_valid_runs.append(run)
     for player in run["players"]:
         if "(guest)" not in player:
@@ -361,6 +387,7 @@ def get_current_data(reworked: list, datas: list):
           player_info["total_run_time_in_format"] = time_to_text_2(player_info["total_run_time"])
           player_info["players_runs"].append(run)
           player_info["players_runs_in_simple_format"].append(simplify_run_to_format(run))
+
           if run["placement"] == 1:
             player_info["total_1st_place"] += 1
             player_info["1st_place_runs"].append(run)
@@ -439,7 +466,7 @@ def get_player_wrc_over_time(valid_runs: list, datas: list, all_players: list):
 
       for run in active_run_list:
         deprecated_date = src_time_to_datetime(run["deprecated_date"])
-        if deprecated_date < current_datepoint:
+        if deprecated_date < current_datepoint or "VIP" in run["status"]:
           continue
         else :
           placeholder_list.append(run)
@@ -463,7 +490,7 @@ def get_player_wrc_over_time(valid_runs: list, datas: list, all_players: list):
             run["placement"] -= 1
           previous_time_list[c_index] = run["time_in_seconds"]
 
-        if run["placement"] == 1:
+        if run["placement"] == 1 and "VIP" not in run["status"]:
           for p in run["players"]:
             if "(guest)" not in p:
               value = current_dpoint_player_list[all_players_name.index(p)][f"{p}"]
@@ -515,9 +542,11 @@ def main():
     [2] -> All the IDs in the Old category (Survivor Old & Beast Old)
     [3] -> All the names in the old sub-categories, reworked to fit the main one
     [4] -> The fitting IDs for the old sub-categories
-    [5] -> Deprecated Runs start date and end date (run in the Old categories, will be very important for preserving history)
-    [6] -> Revalidated Runs for runs that both the date and the deprecated date is in between the date and the verified date (aka late verifying for reasons)
-    [7] -> extra names
+    [5] -> All the IDs in the VIP category
+    [6] -> All the names in the VIP category
+    [7] -> Deprecated Runs start date and end date (run in the Old categories, will be very important for preserving history)
+    [8] -> Revalidated Runs for runs that both the date and the deprecated date is in between the date and the verified date (aka late verifying for reasons)
+    [9] -> extra names
   """
 
   reworked_datas = process_runs_and_players(all_datas, extra_datas)
@@ -542,8 +571,8 @@ def main():
   #print(all_data[0][rnd], rnd)
   #with open("test-data.json", "w") as file:
   #  json.dump(all_data[0], file)
-  with open("test-data.json", "w") as file:
-    json.dump(player_wrc_over_time[1], file)
+  #with open("test-data.json", "w") as file:
+  #  json.dump(player_wrc_over_time[1], file)
 
   return all_datas, extra_datas, reworked_datas, current_datas, player_wrc_over_time
 

@@ -26,8 +26,8 @@ async def collect_all_data(urls: list[str] | None = None):
         results = await fetch_batch(session, urls)
         return results
 
-def seasonal_naming(value, check):
-    if check == "qj70zmeq" or check == "7kjp5pxk":
+def check_count(value, check):
+    if check == "qj70zmeq" or check == "7kjp5pxk" or check == "814gy5j1":
         match value:
             case "1":
                 return "One Player"
@@ -39,7 +39,7 @@ def seasonal_naming(value, check):
                 return "Four Players"
             case _:
                 return "Unknown"
-    elif check == "q6504o3l" or check == "q25q0782":
+    elif check == "q6504o3l" or check == "q25q0782" or check == "z19ymjkl":
         match value:
             case "1":
                 return "One Capture"
@@ -97,55 +97,66 @@ def check_name(value: str):
         return value
     
 def main():
-    all_variables_url = ["https://www.speedrun.com/api/v1/categories/7dg6l4gk/variables","https://www.speedrun.com/api/v1/categories/n2yg8772/variables","https://www.speedrun.com/api/v1/categories/wk65l5e2/variables", "https://www.speedrun.com/api/v1/categories/7kjp5pxk/variables", "https://www.speedrun.com/api/v1/categories/q25q0782/variables"]
+    all_variables_url = ["https://www.speedrun.com/api/v1/categories/7dg6l4gk/variables","https://www.speedrun.com/api/v1/categories/n2yg8772/variables","https://www.speedrun.com/api/v1/categories/wk65l5e2/variables", "https://www.speedrun.com/api/v1/categories/7kjp5pxk/variables", "https://www.speedrun.com/api/v1/categories/q25q0782/variables", "https://www.speedrun.com/api/v1/categories/zdn4m1qk/variables"]
     all_extras_data = asyncio.run(collect_all_data(urls=list(all_variables_url)))   
     ids = []
     names = []
     old_ids = []
     old_names = []
     old_to_new_match = []
+    VIP_ids = []
+    VIP_names = []
     text_placeholder = ""
 
     var = all_extras_data[0]
-    for k1 in var[0]["values"]["values"]:
-        for k2 in var[1]["values"]["values"]:
-            text_placeholder = "7dg6l4gk" + k1 + k2
+    for k0 in var[0]["values"]["values"]:
+        for k1 in var[1]["values"]["values"]:
+            text_placeholder = "7dg6l4gk" + k0 + k1
             ids.append(text_placeholder)
-            text_placeholder = var[0]["values"]["values"][f"{k1}"]["label"] + " " + var[1]["values"]["values"][f"{k2}"]["label"]
+            text_placeholder = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"]
             names.append(text_placeholder)
 
     var = all_extras_data[1]
-    for k1 in var[0]["values"]["values"]:
-        for k2 in var[1]["values"]["values"]:
-            text_placeholder = "n2yg8772" + k1 + k2
+    for k0 in var[0]["values"]["values"]:
+        for k1 in var[1]["values"]["values"]:
+            text_placeholder = "n2yg8772" + k0 + k1
             ids.append(text_placeholder)
-            text_placeholder = var[0]["values"]["values"][f"{k1}"]["label"] + " " + var[1]["values"]["values"][f"{k2}"]["label"]
+            text_placeholder = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"]
             names.append(text_placeholder)
 
     var = all_extras_data[2]
-    for k1 in var[0]["values"]["values"]:
-        for k2 in var[1]["values"]["values"]:
-            for k3 in var[2]["values"]["values"]:
-                text_placeholder = k1 + k2 + k3
+    for k0 in var[0]["values"]["values"]:
+        for k1 in var[1]["values"]["values"]:
+            for k2 in var[2]["values"]["values"]:
+                text_placeholder = k0 + k1 + k2
                 ids.append(text_placeholder)
-                text_placeholder = var[1]["values"]["values"][f"{k2}"]["label"] + " " + seasonal_naming(var[2]["values"]["values"][f"{k3}"]["label"], k1)
+                text_placeholder = var[1]["values"]["values"][f"{k1}"]["label"] + " " + check_count(var[2]["values"]["values"][f"{k2}"]["label"], k0)
                 names.append(text_placeholder)
 
     var = all_extras_data[3]
-    for k1 in var[0]["values"]["values"]:
-        for k2 in var[1]["values"]["values"]:
-            text_placeholder = k1 + k2
+    for k0 in var[0]["values"]["values"]:
+        for k1 in var[1]["values"]["values"]:
+            text_placeholder = k0 + k1
             old_ids.append(text_placeholder)
-            text_placeholder = check_name(var[0]["values"]["values"][f"{k1}"]["label"]) + " " + seasonal_naming(var[1]["values"]["values"][f"{k2}"]["label"], "7kjp5pxk")
+            text_placeholder = check_name(var[0]["values"]["values"][f"{k0}"]["label"]) + " " + check_count(var[1]["values"]["values"][f"{k1}"]["label"], "7kjp5pxk")
             old_names.append(text_placeholder)
 
     var = all_extras_data[4]
-    for k1 in var[0]["values"]["values"]:
-        for k3 in var[2]["values"]["values"]:
-            text_placeholder = k1 + k3
+    for k0 in var[0]["values"]["values"]:
+        for k2 in var[2]["values"]["values"]:
+            text_placeholder = k0 + k2
             old_ids.append(text_placeholder)
-            text_placeholder = check_name(var[0]["values"]["values"][f"{k1}"]["label"]) + " " + seasonal_naming(var[2]["values"]["values"][f"{k3}"]["label"], "q25q0782")
+            text_placeholder = check_name(var[0]["values"]["values"][f"{k0}"]["label"]) + " " + check_count(var[2]["values"]["values"][f"{k2}"]["label"], "q25q0782")
             old_names.append(text_placeholder)
+
+    var = all_extras_data[5]
+    for k0 in var[0]["values"]["values"]:
+        for k1 in var[1]["values"]["values"]:
+            for k2 in var[2]["values"]["values"]:
+                text_placeholder = k0 + k1 + k2
+                VIP_ids.append(text_placeholder)
+                text_placeholder = var[1]["values"]["values"][f"{k1}"]["label"] + " " + check_count(var[2]["values"]["values"][f"{k2}"]["label"], k0)
+                VIP_names.append(text_placeholder)
 
     for n in old_names:
         if n in names:
@@ -166,6 +177,8 @@ def main():
     all_extras_data.append(old_ids)
     all_extras_data.append(old_names)
     all_extras_data.append(old_to_new_match)
+    all_extras_data.append(VIP_ids)
+    all_extras_data.append(VIP_names)
     all_extras_data.append(deprecated_runs)
     all_extras_data.append(revalidated_runs)
     all_extras_data.append(exception_names)
