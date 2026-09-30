@@ -90,12 +90,8 @@ def main():
     
     all_reg_players_uri = list(all_reg_players_uri)
     all_reg_players_data = asyncio.run(collect_all_data(mode="known", url_list=all_reg_players_uri))
-    #with open("players-data.json", "w") as file:
-    #    json.dump(all_reg_players_data, file)
     all_platforms_uri = list(all_platforms_uri)
-    all_platforms_data = asyncio.run(collect_all_data(mode="known", url_list=all_platforms_uri))
-    #with open("platforms-data.json", "w") as file:
-    #    json.dump(all_platforms_data, file) 
+    all_platforms_data = asyncio.run(collect_all_data(mode="known", url_list=all_platforms_uri)) 
 
     all_registered_players_info = [[],[],[]]
     exception_name = ["SkittlesCat", "Newbe", "CWANIACZKA"]
@@ -125,13 +121,5 @@ def main():
         json.dump(all_datas, file)    
 
     print("finished collecting all players' data ||", time.perf_counter() - start)
-    
-    #with open("runs-data.json", "w") as file:
-    #    json.dump(all_runs, file)
-    #with open("players-data.json", "w") as file:
-    #    json.dump(all_registered_players_info, file)
-    #with open("platforms-data.json", "w") as file:
-    #    json.dump(all_platforms_in_run, file)
-    #print("finished exporting datas")
 
 #main()

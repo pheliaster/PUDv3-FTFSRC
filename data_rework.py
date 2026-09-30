@@ -185,7 +185,6 @@ def process_runs_and_players(datas, extras):
 
   for run in all_runs:
       index += 1
-      #print(run)
       new_run = create_new_reworked_run_data(run)
       new_run["position"] = index
       new_run["platform"] = all_platforms[1][all_platforms[0].index(run["system"]["platform"])]
@@ -309,7 +308,6 @@ def process_runs_and_players(datas, extras):
       all_reworked_runs.append(new_run)
 
   for player in all_players_name:
-      #print(player)
       new_player = create_new_reworked_player_data(player)
       new_player["player_id"] = all_players_id[all_players_name.index(player)]
       new_player["nationality"] = all_players_national[all_players_name.index(player)]
@@ -417,103 +415,161 @@ def get_current_data(reworked: list, datas: list):
 
   all_current_runs = sorted(all_runs, key=lambda r: r["position"])
   all_current_valid_runs = sorted(all_valid_runs, key=lambda r: r["position"])
-  #with open("test-data.json", "w") as file:
-  #  json.dump(all_current_runs, file)
 
   return all_current_runs, all_current_valid_runs, all_players
 
-def get_player_wrc_over_time(valid_runs: list, datas: list, all_players: list):
+def get_board_history_over_time(reworked: list, datas: list, all_players: list):
 
-  all_runs = deepcopy(sorted(valid_runs, key=lambda t: src_time_to_datetime(t["validated_date"])))
+  all_runs = deepcopy(sorted(reworked[0], key=lambda t: src_time_to_datetime(t["validated_date"])))
   all_players_name = datas[1][1]
+
+  all_date_to_check = set({})
+  for run in all_runs:
+    all_date_to_check.add(src_time_to_datetime(run["validated_date"]))
+    all_date_to_check.add(src_time_to_datetime(run["deprecated_date"]))
+  all_date_to_check = list(sorted(all_date_to_check))
 
   default_player_list = []
   for player in all_players_name:
     default_player_list.append({f"{player}" : 0, f"{player}-highest": 0})
   player_stats_overtime = []
+  current_count_stats = {
+    "date" : "",
+    "all" : 0,
+    "valid" : 0,
+    "deprecated" : 0,
+    "rejected" : 0
+  }
+  valid_run_count = 0
+  deprecated_run_count = 0
+  rejected_run_count = 0
+  run_count_stats_overtime = []
+
 
   run_index = 0
+  date_index = 0
+  skip = False
   active_player_list = deepcopy(default_player_list)
-  current_datepoint = datetime.datetime(2017, 9, 14, 0, 0, 0)
+  current_datepoint = all_date_to_check[date_index]
   active_run_list = []
   previous_dpoint_data = {}
 
   while True:
-    if run_index >= len(all_runs):
+    if run_index >= len(all_runs) or date_index >= len(all_date_to_check):
       break
 
-    validated_date = src_time_to_datetime(all_runs[run_index]["validated_date"])
-    print((run_index+1), "/" ,len(all_runs), " at " , current_datepoint)
+    run = all_runs[run_index]
+    skip = False
+    validated_date = src_time_to_datetime(run["validated_date"])
+    deprecated_date = src_time_to_datetime(run["deprecated_date"])
+    print((run_index+1), "/" ,len(all_runs), " at " , f"{current_datepoint}")
 
-    if validated_date < current_datepoint:
-      active_run_list.append(all_runs[run_index])
+    if validated_date <= current_datepoint:
+
+      if "pending" in run["status"]:
+        run_index += 1
+        continue
+      if "rejected" in run["status"]:
+        rejected_run_count += 1
+        run_index += 1
+        continue
+
+      if "VIP" in run["status"]:
+        if "deprecated" in run["status"]:
+          deprecated_run_count += 1
+        valid_run_count += 1
+        run_index += 1
+        continue
+
+      if "ignored" in run["status"] or "orphaned" in run["status"]:
+        deprecated_run_count += 1
+        run_index += 1
+        continue
+
+      active_run_list.append(run)
+      valid_run_count += 1
       run_index += 1
       continue
     else:
 
-      current_datepoint += datetime.timedelta(hours=TIME_MARGIN_IN_HOURS)
-      if len(active_run_list) <= 0:
-        continue
+      date_index += 1
+      if len(active_run_list) > 0:
+        active_run_list = sorted(active_run_list, key=lambda r: r["time_in_seconds"])
+        current_dpoint_player_list = deepcopy(default_player_list)
+        category_checklist = []
+        obsolete_player_checklist = []
+        category_run_count = []
+        previous_time_list = []
+        placeholder_list = []
+        placeholder = {}
 
-      active_run_list = sorted(active_run_list, key=lambda r: r["time_in_seconds"])
-      current_dpoint_player_list = deepcopy(default_player_list)
-      category_checklist = []
-      obsolete_player_checklist = []
-      category_run_count = []
-      previous_time_list = []
-      placeholder_list = []
-      placeholder = {}
+        for run in active_run_list:
+          deprecated_date = src_time_to_datetime(run["deprecated_date"])
+          if deprecated_date <= current_datepoint:
+            deprecated_run_count += 1
+            continue
+          else :
+            placeholder_list.append(run)
 
-      for run in active_run_list:
-        deprecated_date = src_time_to_datetime(run["deprecated_date"])
-        if deprecated_date < current_datepoint or "VIP" in run["status"]:
-          continue
-        else :
-          placeholder_list.append(run)
-
-        if run["category_id"] not in category_checklist:
-          category_checklist.append(run["category_id"])
-          category_run_count.append(1)
-          obsolete_player_checklist.append([set(run["players"])])
-          previous_time_list.append(run["time_in_seconds"])
-          run["placement"] = 1
-        else:
-          c_index = category_checklist.index(run["category_id"])
-          category_run_count[c_index] += 1
-          if set(run["players"]) in obsolete_player_checklist[c_index]:
-            category_run_count[c_index] -= 1
-            run["placement"] = "obsolete"
+          if run["category_id"] not in category_checklist:
+            category_checklist.append(run["category_id"])
+            category_run_count.append(1)
+            obsolete_player_checklist.append([set(run["players"])])
+            previous_time_list.append(run["time_in_seconds"])
+            run["placement"] = 1
           else:
-            run["placement"] = category_run_count[c_index]
-            obsolete_player_checklist[c_index].append(set(run["players"]))
-          if run["time_in_seconds"] == previous_time_list[c_index] and run["placement"] != "obsolete":
-            run["placement"] -= 1
-          previous_time_list[c_index] = run["time_in_seconds"]
+            c_index = category_checklist.index(run["category_id"])
+            category_run_count[c_index] += 1
+            if set(run["players"]) in obsolete_player_checklist[c_index]:
+              category_run_count[c_index] -= 1
+              run["placement"] = "obsolete"
+            else:
+              run["placement"] = category_run_count[c_index]
+              obsolete_player_checklist[c_index].append(set(run["players"]))
+            if run["time_in_seconds"] == previous_time_list[c_index] and run["placement"] != "obsolete":
+              run["placement"] -= 1
+            previous_time_list[c_index] = run["time_in_seconds"]
 
-        if run["placement"] == 1 and "VIP" not in run["status"]:
-          for p in run["players"]:
-            if "(guest)" not in p:
-              value = current_dpoint_player_list[all_players_name.index(p)][f"{p}"]
-              value += 1
-              if active_player_list[all_players_name.index(p)][f"{p}-highest"] < value:
-                active_player_list[all_players_name.index(p)][f"{p}-highest"] = value
-                all_players[all_players_name.index(p)]["highest_wr_count"] = value
-              placeholder[f"{p}"] = value
-              placeholder[f"{p}-highest"] = active_player_list[all_players_name.index(p)][f"{p}-highest"]
-              current_dpoint_player_list[all_players_name.index(p)][f"{p}"] = value
+          if run["placement"] == 1 and "VIP" not in run["status"]:
+            for p in run["players"]:
+              if "(guest)" not in p:
+                value = current_dpoint_player_list[all_players_name.index(p)][f"{p}"]
+                value += 1
+                if active_player_list[all_players_name.index(p)][f"{p}-highest"] < value:
+                  active_player_list[all_players_name.index(p)][f"{p}-highest"] = value
+                  all_players[all_players_name.index(p)]["highest_wr_count"] = value
+                placeholder[f"{p}"] = value
+                placeholder[f"{p}-highest"] = active_player_list[all_players_name.index(p)][f"{p}-highest"]
+                current_dpoint_player_list[all_players_name.index(p)][f"{p}"] = value
 
-      if REMOVE_DUP_WR_DATE :
-        if placeholder != previous_dpoint_data:
+        if REMOVE_DUP_WR_DATE :
+          if placeholder != previous_dpoint_data:
+            player_stats_overtime.append({"date": f"{current_datepoint}"} | placeholder)
+          previous_dpoint_data = placeholder
+        else:
           player_stats_overtime.append({"date": f"{current_datepoint}"} | placeholder)
-        previous_dpoint_data = placeholder
-      else:
-        player_stats_overtime.append({"date": f"{current_datepoint}"} | placeholder)
 
-      active_run_list = placeholder_list
+        active_run_list = placeholder_list
+
+    current_count_stats["date"] = f"{current_datepoint}"
+    current_count_stats["all"] = run_index
+    current_count_stats["valid"] = valid_run_count
+    current_count_stats["deprecated"] = deprecated_run_count
+    current_count_stats["rejected"] = rejected_run_count
+    run_count_stats_overtime.append(deepcopy(current_count_stats))
+    current_datepoint = all_date_to_check[date_index]
+
+  current_count_stats["date"] = f"{NOW_DATE}"
+  current_count_stats["all"] = run_index
+  current_count_stats["valid"] = valid_run_count
+  current_count_stats["deprecated"] = deprecated_run_count
+  current_count_stats["rejected"] = rejected_run_count
+  run_count_stats_overtime.append(deepcopy(current_count_stats))
+  current_datepoint = all_date_to_check[date_index]
 
   all_players = sorted(all_players, key=lambda p: p["highest_wr_count"], reverse=True)   
 
-  return player_stats_overtime, all_players
+  return player_stats_overtime, run_count_stats_overtime, all_players
 
 def main():
   start = time.perf_counter()
@@ -562,18 +618,13 @@ def main():
     [1] -> All the currently valid runs (that means it's verified and in a known category)
     [2] -> All the current players stat
   """
-  player_wrc_over_time = get_player_wrc_over_time(current_datas[1], all_datas, current_datas[2])
+  all_stats_over_time = get_board_history_over_time(reworked_datas, all_datas, current_datas[2])
 
   print("finished formatting datas ||", time.perf_counter() - start)
 
-  #print(len(all_data[0])," - ",len(all_data[1]))
-  #rnd = random.randint(0,len(all_data[0])-1)
-  #print(all_data[0][rnd], rnd)
   #with open("test-data.json", "w") as file:
-  #  json.dump(all_data[0], file)
-  #with open("test-data.json", "w") as file:
-  #  json.dump(player_wrc_over_time[1], file)
+  #  json.dump(all_stats_over_time[1], file)
 
-  return all_datas, extra_datas, reworked_datas, current_datas, player_wrc_over_time
+  return all_datas, extra_datas, reworked_datas, current_datas, all_stats_over_time
 
 #main()
