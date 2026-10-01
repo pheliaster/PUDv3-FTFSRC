@@ -94,7 +94,7 @@ def main():
     all_platforms_data = asyncio.run(collect_all_data(mode="known", url_list=all_platforms_uri)) 
 
     all_registered_players_info = [[],[],[]]
-    exception_name = ["SkittlesCat", "Newbe", "CWANIACZKA"]
+    exception_name = ["SkittlesCat", "Newbe", "CWANIACZKA", "Desgxnsz"]
     for p in all_reg_players_data:
         all_registered_players_info[0].append(p["id"])
         all_registered_players_info[1].append(p["names"]["international"])

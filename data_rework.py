@@ -284,10 +284,13 @@ def process_runs_and_players(datas, extras):
       for player in run["players"]:
         if player["rel"] == "user":
           new_run["players"].append(all_players_name[all_players_id.index(player["id"])])
-        elif player["rel"] == "guest" and player["name"] in exception_username:
-          new_run["players"].append(player["name"])
-        else :
-          new_run["players"].append(player["name"] + "(guest)")
+        else:
+          for name in exception_username:
+            if name in player["name"]:
+              new_run["players"].append(name)
+              break
+          else:
+            new_run["players"].append(player["name"] + "(guest)")
 
       if "ignored" in new_run["status"] or "deprecated" in new_run["status"]:
         new_run["placement"] = "deprecated"
