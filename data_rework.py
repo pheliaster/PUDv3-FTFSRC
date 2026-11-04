@@ -104,6 +104,7 @@ def create_new_reworked_run_data(run):
     single_run["validated_date"] = run["date"] + "T00:00:00Z"
     single_run["deprecated_date"] = f"{NOW_DATE.astimezone(tz=datetime.timezone.utc)}"
     single_run["run_link"] = run["weblink"]
+    single_run["run_footage"] = ""
     return single_run
 
 def create_new_reworked_player_data(player):
@@ -185,6 +186,7 @@ def process_runs_and_players(datas, extras):
 
   for run in all_runs:
       index += 1
+      #print(run)
       new_run = create_new_reworked_run_data(run)
       new_run["position"] = index
       new_run["platform"] = all_platforms[1][all_platforms[0].index(run["system"]["platform"])]
@@ -305,6 +307,11 @@ def process_runs_and_players(datas, extras):
 
       if "deprecated" in new_run["status"] and "orphaned" in new_run["status"] and "verified" in new_run["status"]:
         unknown_verified_deprecated_date_count -= 1
+
+      if "links" in run["videos"]:
+        new_run["run_footage"] = run["videos"]["links"][0]["uri"]
+      else:
+        new_run["run_footage"] = run["videos"]["text"]
 
       new_run["players_in_format"] = ", ".join(new_run["players"])
 
