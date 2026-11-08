@@ -6,6 +6,9 @@ from copy import deepcopy
 NOW_DATE = datetime.datetime.today()
 TIME_MARGIN_IN_HOURS: int = 24
 REMOVE_DUP_WR_DATE = True
+PRINT_PROGRESS = False #print progress in console for history board
+PRINT_DELETED_RUN = False #print the id of all deleted run in console
+SUB2_EXCEPTION_LIST = ["zqgpe01m", "zqgnl7xm", "z0648v4z", "mrnnx22y", "zxo801ez", "yde1o2wm", "ylr120xy"]
 
 def src_time_to_datetime(txt):
   """
@@ -82,7 +85,8 @@ def set_fastest_time(ctype, count, player, run):
 
 def create_new_reworked_run_data(run):
     """
-      - "status" can only be in 6 states ["pending", "verified", "rejected", "deprecated", "orphaned", "VIP" ,"ignored"]
+      ["status"] can only be in 7 states ("pending", "verified", "rejected", "deprecated", "orphaned", "VIP" ,"ignored" , "deleted")
+      ["category_type"] False = Survivor, True = Beast
     """
     single_run = {}
     single_run["position"] = 0
@@ -133,6 +137,9 @@ def create_new_reworked_player_data(player):
     single_player["beast_wrs"] = 0
     single_player["beast_wrs_list"] = []
     single_player["beast_wrs_list_in_simple_format"] = []
+    single_player["sub_2_survivor_count"] = 0
+    single_player["sub_2_survivor_list"] = []
+    single_player["sub_2_survivor_list_in_simple_format"] = []
     single_player["fastest_1_survivor_run"] = {"time_in_seconds": 900}
     single_player["fastest_2_survivors_run"] = {"time_in_seconds": 900}
     single_player["fastest_3_survivors_run"] = {"time_in_seconds": 900}
@@ -159,11 +166,12 @@ def create_new_reworked_player_data(player):
     single_player["fastest_4_captures_run_in_simple_format"] = "N/A"
     return single_player
 
-def process_runs_and_players(datas, extras):
+def process_runs_and_players(datas, extras, database):
   """
     WARNING!!! All Players Data MUST NOT be sorted in any mean in order to align with the index of the player name and id list that is taken originally
   """
-  all_runs = datas[0]
+  all_runs = database
+  all_current_runs = datas[0]
   all_players_id = datas[1][0]
   all_players_name = datas[1][1]
   all_players_national = datas[1][2]
@@ -181,8 +189,12 @@ def process_runs_and_players(datas, extras):
 
   all_reworked_runs = []
   all_reworked_players = []
-  unknown_verified_deprecated_date_count = 0 
+  all_current_ids = []
+  unknown_verified_deprecated_date_count = 0
   index = 0
+
+  for crun in all_current_runs:
+      all_current_ids.append(crun["id"])
 
   for run in all_runs:
       index += 1
@@ -259,7 +271,7 @@ def process_runs_and_players(datas, extras):
           new_run["status"].append("orphaned")
 
       if run["status"]["status"] == "new" :
-        new_run["status"] = "pending"
+        new_run["status"] = ["pending"]
       elif run["status"]["status"] == "rejected":
         new_run["status"].append("rejected")
         new_run["rejected_reason"] = run["status"]["reason"]
@@ -272,7 +284,6 @@ def process_runs_and_players(datas, extras):
         new_run["verifier"] = all_players_name[all_players_id.index(run["status"]["examiner"])]
         if "deprecated" in new_run["status"]:
           new_run["deprecated_date"] = run["status"]["verify-date"] + " (N/A)"
-          unknown_verified_deprecated_date_count += 1
 
       if new_run["run_id"] in all_deprecated_runs:
         new_run["deprecated_date"] = all_deprecated_runs[f"{new_run["run_id"]}"]
@@ -280,6 +291,8 @@ def process_runs_and_players(datas, extras):
         unknown_verified_deprecated_date_count -= 1
       if new_run["run_id"] in all_revalidated_runs:
         new_run["validated_date"] = all_revalidated_runs[f"{new_run["run_id"]}"]
+      if new_run["run_id"] not in all_current_ids:
+        new_run["status"].append("deleted")
 
       new_run["count"] = text_to_number(new_run["category_name"])
 
@@ -304,9 +317,11 @@ def process_runs_and_players(datas, extras):
         new_run["placement"] = "rejected"
       else:
         pass
-
-      if "deprecated" in new_run["status"] and "orphaned" in new_run["status"] and "verified" in new_run["status"]:
-        unknown_verified_deprecated_date_count -= 1
+      
+      if "deleted" in new_run["status"]:
+        new_run["placement"] = "deleted"
+        if PRINT_DELETED_RUN :
+          print(f"Deleted run detected, id {new_run["run_id"]}")
 
       if "links" in run["videos"]:
         new_run["run_footage"] = run["videos"]["links"][0]["uri"]
@@ -324,7 +339,23 @@ def process_runs_and_players(datas, extras):
       all_reworked_players.append(new_player)
 
   return all_reworked_runs, all_reworked_players, unknown_verified_deprecated_date_count
+
+def default_player_info_update(plif, run):
   
+  player_info = plif
+  player_info["total_run_count"] += 1
+  player_info["total_run_time"] += run["time_in_seconds"]
+  player_info["total_run_time_in_format"] = time_to_text_2(player_info["total_run_time"])
+  player_info["players_runs"].append(run)
+  player_info["players_runs_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
+
+  if run["time_in_seconds"] < 120 and run["category_type"] == False and run["run_id"] not in SUB2_EXCEPTION_LIST:
+    player_info["sub_2_survivor_count"] += 1
+    player_info["sub_2_survivor_list"].append(run)
+    player_info["sub_2_survivor_list_in_simple_format"].append(simplify_run_to_format(run))
+
+  return player_info
+
 def get_current_data(reworked: list, datas: list):
 
   all_runs = deepcopy(sorted(reworked[0], key=lambda t: t["time_in_seconds"]))
@@ -338,19 +369,14 @@ def get_current_data(reworked: list, datas: list):
   previous_time_list = []
 
   for run in all_runs:
-    if "ignored" in run["status"] or "orphaned" in run["status"] or "rejected" in run["status"] or "pending" in run["status"]:
+    if "ignored" in run["status"] or "orphaned" in run["status"] or "rejected" in run["status"] or "pending" in run["status"] or "deleted" in run["status"]:
       continue
     
     if "deprecated" in run["status"]:
       for player in run["players"]:
           if "(guest)" not in player:
-            player_info = all_players[all_players_name.index(player)]
-            player_info["total_run_count"] += 1
-            player_info["total_run_time"] += run["time_in_seconds"]
-            player_info["total_run_time_in_format"] = time_to_text_2(player_info["total_run_time"])
-            player_info["players_runs"].append(run)
-            player_info["players_runs_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
-            all_players[all_players_name.index(player)] = player_info
+            all_players[all_players_name.index(player)] = default_player_info_update(all_players[all_players_name.index(player)], run)
+
       all_valid_runs.append(run)
       continue
 
@@ -376,25 +402,14 @@ def get_current_data(reworked: list, datas: list):
     if "VIP" in run["status"]:
       for player in run["players"]:
           if "(guest)" not in player:
-            player_info = all_players[all_players_name.index(player)]
-            player_info["total_run_count"] += 1
-            player_info["total_run_time"] += run["time_in_seconds"]
-            player_info["total_run_time_in_format"] = time_to_text_2(player_info["total_run_time"])
-            player_info["players_runs"].append(run)
-            player_info["players_runs_in_simple_format"].append(run["category_name"] + " at " + run["time_in_format"])
-            all_players[all_players_name.index(player)] = player_info
+            all_players[all_players_name.index(player)] = default_player_info_update(all_players[all_players_name.index(player)], run)
       all_valid_runs.append(run)
       continue
 
     all_valid_runs.append(run)
     for player in run["players"]:
         if "(guest)" not in player:
-          player_info = all_players[all_players_name.index(player)]
-          player_info["total_run_count"] += 1
-          player_info["total_run_time"] += run["time_in_seconds"]
-          player_info["total_run_time_in_format"] = time_to_text_2(player_info["total_run_time"])
-          player_info["players_runs"].append(run)
-          player_info["players_runs_in_simple_format"].append(simplify_run_to_format(run))
+          player_info = default_player_info_update(all_players[all_players_name.index(player)], run)
 
           if run["placement"] == 1:
             player_info["total_1st_place"] += 1
@@ -408,7 +423,7 @@ def get_current_data(reworked: list, datas: list):
             player_info["total_3rd_place"] += 1
             player_info["3rd_place_runs"].append(run)
             player_info["3rd_place_runs_in_simple_format"].append(simplify_run_to_format(run))
-          if "7dg6l4gk" in run["category_id"] or "qj70zmeq" in run["category_id"] :
+          if not run["category_type"] :
             set_fastest_time(run["category_type"], run["count"], player_info, run)
             if run["placement"] == 1:
               player_info["survivor_wrs"] += 1
@@ -458,7 +473,6 @@ def get_board_history_over_time(reworked: list, datas: list, all_players: list):
 
   run_index = 0
   date_index = 0
-  skip = False
   active_player_list = deepcopy(default_player_list)
   current_datepoint = all_date_to_check[date_index]
   active_run_list = []
@@ -469,10 +483,11 @@ def get_board_history_over_time(reworked: list, datas: list, all_players: list):
       break
 
     run = all_runs[run_index]
-    skip = False
     validated_date = src_time_to_datetime(run["validated_date"])
     deprecated_date = src_time_to_datetime(run["deprecated_date"])
-    print((run_index+1), "/" ,len(all_runs), " at " , f"{current_datepoint}")
+
+    if PRINT_PROGRESS :
+      print((run_index+1), "/" ,len(all_runs), " at " , f"{current_datepoint}")
 
     if validated_date <= current_datepoint:
 
@@ -615,7 +630,14 @@ def main():
     [9] -> extra names
   """
 
-  reworked_datas = process_runs_and_players(all_datas, extra_datas)
+  with open("x-database.json", 'r', encoding='utf-8') as file:
+      database = json.load(file)
+  """
+    ["run"] : All the runs in the database as of 7/11/2026
+    ["id"] : All the ids in the database as of 7/11/2026
+  """
+
+  reworked_datas = process_runs_and_players(all_datas, extra_datas, database)
   """
     [0] -> All reworked runs
     [1] -> All the reworked players

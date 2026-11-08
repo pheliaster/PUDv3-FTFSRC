@@ -73,21 +73,41 @@ async def collect_all_data(mode: str = "known", base_url: str | None = None, url
 def main():
     BASE_URL = "https://www.speedrun.com/api/v1/runs?game=46wpg3dr&offset={}"
     all_datas = asyncio.run(collect_all_data(mode="expanding", base_url=BASE_URL))
-    all_runs = []
+    all_current_runs = []
     for i in all_datas:
         for j in i:
-            all_runs.append(j)
+            all_current_runs.append(j)
     print("finished collecting all runs' data ||", time.perf_counter() - start)
     all_reg_players_uri = {"https://www.speedrun.com/api/v1/users/8dgrz6g8"}
-    all_platforms_uri = {"https://www.speedrun.com/api/v1/platforms/8gej2n93"}
-    for run in all_runs:
-        for l in run["links"]:
+    all_platforms_uri = {"https://www.speedrun.com/api/v1/platforms/8gej2n93"}  
+
+    with open("x-database.json", 'r', encoding='utf-8') as file:
+        database = json.load(file)
+
+    change_count = 0
+    all_ids = []
+
+    for run in database:
+        all_ids.append(run["id"])
+
+    for crun in all_current_runs:
+        for l in crun["links"]:
             if l["rel"] == "platform":
                 all_platforms_uri.add(l["uri"])
-        for p in run["players"]:
+        for p in crun["players"]:
             if p["rel"] != "guest":
                 all_reg_players_uri.add(p["uri"])
-    
+        if crun["id"] not in all_ids:
+            database.append(crun)
+            change_count += 1
+            continue
+        if crun != database[all_ids.index(crun["id"])]:
+            database[all_ids.index(crun["id"])] = crun
+            change_count += 1
+
+    if change_count >= 1: print(f"There are {change_count} changes needed, updated ||", time.perf_counter() - start)
+    else: print("0 changes, continue ||", time.perf_counter() - start)
+
     all_reg_players_uri = list(all_reg_players_uri)
     all_reg_players_data = asyncio.run(collect_all_data(mode="known", url_list=all_reg_players_uri))
     all_platforms_uri = list(all_platforms_uri)
@@ -113,12 +133,15 @@ def main():
         all_platforms_in_run[1].append(plat["name"])
 
     all_datas = []
-    all_datas.append(all_runs)
+    all_datas.append(all_current_runs)
     all_datas.append(all_registered_players_info)
     all_datas.append(all_platforms_in_run)
 
     with open("x-data.json", "w") as file:
-        json.dump(all_datas, file)    
+        json.dump(all_datas, file)
+
+    with open("x-database.json", "w") as file:
+        json.dump(database, file)   
 
     print("finished collecting all players' data ||", time.perf_counter() - start)
 
