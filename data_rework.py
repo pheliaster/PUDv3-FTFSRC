@@ -7,7 +7,7 @@ NOW_DATE = datetime.datetime.today()
 TIME_MARGIN_IN_HOURS: int = 24
 REMOVE_DUP_WR_DATE = True
 PRINT_PROGRESS = False #print progress in console for history board
-PRINT_DELETED_RUN = False #print the id of all deleted run in console
+PRINT_DELETED_RUN = True #print the id of all deleted run in console
 SUB2_EXCEPTION_LIST = ["zqgpe01m", "zqgnl7xm", "z0648v4z", "mrnnx22y", "zxo801ez", "yde1o2wm", "ylr120xy"]
 
 def src_time_to_datetime(txt):
@@ -85,7 +85,7 @@ def set_fastest_time(ctype, count, player, run):
 
 def create_new_reworked_run_data(run):
     """
-      ["status"] can only be in 7 states ("pending", "verified", "rejected", "deprecated", "orphaned", "VIP" ,"ignored" , "deleted")
+      ["status"] can be in 8 states ("pending", "verified", "rejected", "deprecated", "orphaned", "VIP" ,"ignored" , "deleted")
       ["category_type"] False = Survivor, True = Beast
     """
     single_run = {}
@@ -275,6 +275,7 @@ def process_runs_and_players(datas, extras, database):
       elif run["status"]["status"] == "rejected":
         new_run["status"].append("rejected")
         new_run["rejected_reason"] = run["status"]["reason"]
+        new_run["verifier"] = all_players_name[all_players_id.index(run["status"]["examiner"])]
         if "deprecated" in new_run["status"]:
           new_run["deprecated_date"] = run["date"] + "T00:00:00Z"
       else:
