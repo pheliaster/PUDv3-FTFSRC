@@ -52,6 +52,18 @@ def check_count(value, check):
             case _:
                 return "Unknown"
 
+def check_count_in_int(value):
+    if ("1" or "One") in value:
+        return 1
+    elif ("2" or "Two") in value:
+        return 2
+    elif ("3" or "Three") in value:
+        return 3
+    elif ("4" or "Four") in value:
+        return 4
+    else:
+        return -1
+    
 def check_name(value: str):
     if "Facility_0" in value:
         return "Facility_0"
@@ -94,76 +106,102 @@ def check_name(value: str):
     elif "Shopping Center" in value:
         return "Shopping Center"
     else :
-        return value
+        return "UNKWOWN"
     
 def main():
-    all_variables_url = ["https://www.speedrun.com/api/v1/categories/7dg6l4gk/variables","https://www.speedrun.com/api/v1/categories/n2yg8772/variables","https://www.speedrun.com/api/v1/categories/wk65l5e2/variables", "https://www.speedrun.com/api/v1/categories/7kjp5pxk/variables", "https://www.speedrun.com/api/v1/categories/q25q0782/variables", "https://www.speedrun.com/api/v1/categories/zdn4m1qk/variables"]
-    all_extras_data = asyncio.run(collect_all_data(urls=list(all_variables_url)))   
-    ids = []
-    names = []
-    old_ids = []
-    old_names = []
-    old_to_new_match = []
-    VIP_ids = []
-    VIP_names = []
+    all_variables_url = ["https://www.speedrun.com/api/v1/categories/7dg6l4gk/variables","https://www.speedrun.com/api/v1/categories/n2yg8772/variables","https://www.speedrun.com/api/v1/categories/wk65l5e2/variables", "https://www.speedrun.com/api/v1/categories/zdn4m1qk/variables", "https://www.speedrun.com/api/v1/categories/7kjp5pxk/variables", "https://www.speedrun.com/api/v1/categories/q25q0782/variables"]
+    all_variables = asyncio.run(collect_all_data(urls=list(all_variables_url)))   
+    all_the_ids = []
+    all_original_names = []
+    all_changed_names = []
+    all_maps_match = []
+    all_count = []
+    change_to_maps = ""
     text_placeholder = ""
 
-    var = all_extras_data[0]
+    var = all_variables[0]
     for k0 in var[0]["values"]["values"]:
         for k1 in var[1]["values"]["values"]:
             text_placeholder = "7dg6l4gk" + k0 + k1
-            ids.append(text_placeholder)
-            text_placeholder = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"]
-            names.append(text_placeholder)
+            all_the_ids.append(text_placeholder)
+            text_placeholder = change_to_maps = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"]
+            all_original_names.append(text_placeholder)
+            all_changed_names.append(text_placeholder)
+            text_placeholder = check_name(change_to_maps)
+            all_maps_match.append(text_placeholder)
+            all_count.append(check_count_in_int(var[1]["values"]["values"][f"{k1}"]["label"]))
 
-    var = all_extras_data[1]
+    var = all_variables[1]
     for k0 in var[0]["values"]["values"]:
         for k1 in var[1]["values"]["values"]:
             text_placeholder = "n2yg8772" + k0 + k1
-            ids.append(text_placeholder)
-            text_placeholder = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"]
-            names.append(text_placeholder)
+            all_the_ids.append(text_placeholder)
+            text_placeholder = change_to_maps = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"]
+            all_original_names.append(text_placeholder)
+            all_changed_names.append(text_placeholder)
+            text_placeholder = check_name(change_to_maps)
+            all_maps_match.append(text_placeholder)
+            all_count.append(check_count_in_int(var[1]["values"]["values"][f"{k1}"]["label"]))
 
-    var = all_extras_data[2]
+    var = all_variables[2]
     for k0 in var[0]["values"]["values"]:
         for k1 in var[1]["values"]["values"]:
             for k2 in var[2]["values"]["values"]:
                 text_placeholder = k0 + k1 + k2
-                ids.append(text_placeholder)
-                text_placeholder = var[1]["values"]["values"][f"{k1}"]["label"] + " " + check_count(var[2]["values"]["values"][f"{k2}"]["label"], k0)
-                names.append(text_placeholder)
+                all_the_ids.append(text_placeholder)
+                text_placeholder = change_to_maps = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"] + " " + var[2]["values"]["values"][f"{k2}"]["label"]
+                all_original_names.append(text_placeholder)
+                text_placeholder = "(Seasonal) " + var[1]["values"]["values"][f"{k1}"]["label"] + " " + check_count(var[2]["values"]["values"][f"{k2}"]["label"], k0)
+                all_changed_names.append(text_placeholder)
+                text_placeholder = check_name(change_to_maps)
+                all_maps_match.append(text_placeholder)
+                all_count.append(check_count_in_int(var[2]["values"]["values"][f"{k2}"]["label"]))
 
-    var = all_extras_data[3]
-    for k0 in var[0]["values"]["values"]:
-        for k1 in var[1]["values"]["values"]:
-            text_placeholder = k0 + k1
-            old_ids.append(text_placeholder)
-            text_placeholder = check_name(var[0]["values"]["values"][f"{k0}"]["label"]) + " " + check_count(var[1]["values"]["values"][f"{k1}"]["label"], "7kjp5pxk")
-            old_names.append(text_placeholder)
-
-    var = all_extras_data[4]
-    for k0 in var[0]["values"]["values"]:
-        for k2 in var[2]["values"]["values"]:
-            text_placeholder = k0 + k2
-            old_ids.append(text_placeholder)
-            text_placeholder = check_name(var[0]["values"]["values"][f"{k0}"]["label"]) + " " + check_count(var[2]["values"]["values"][f"{k2}"]["label"], "q25q0782")
-            old_names.append(text_placeholder)
-
-    var = all_extras_data[5]
+    var = all_variables[3]
     for k0 in var[0]["values"]["values"]:
         for k1 in var[1]["values"]["values"]:
             for k2 in var[2]["values"]["values"]:
                 text_placeholder = k0 + k1 + k2
-                VIP_ids.append(text_placeholder)
-                text_placeholder = var[1]["values"]["values"][f"{k1}"]["label"] + " " + check_count(var[2]["values"]["values"][f"{k2}"]["label"], k0)
-                VIP_names.append(text_placeholder)
+                all_the_ids.append(text_placeholder)
+                text_placeholder = change_to_maps = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"] + " " + var[2]["values"]["values"][f"{k2}"]["label"]
+                all_original_names.append(text_placeholder)
+                text_placeholder = "(VIP) " + var[1]["values"]["values"][f"{k1}"]["label"] + " " + check_count(var[2]["values"]["values"][f"{k2}"]["label"], k0)
+                all_changed_names.append(text_placeholder)
+                text_placeholder = check_name(change_to_maps)
+                all_maps_match.append(text_placeholder)   
+                all_count.append(check_count_in_int(var[2]["values"]["values"][f"{k2}"]["label"]))            
 
-    for n in old_names:
-        if n in names:
-            old_to_new_match.append(ids[names.index(n)])
-        else:
-            old_to_new_match.append(old_ids[old_names.index(n)])
+    var = all_variables[4]
+    for k0 in var[0]["values"]["values"]:
+        for k1 in var[1]["values"]["values"]:
+            text_placeholder = "7kjp5pxk" + k0 + k1
+            all_the_ids.append(text_placeholder)
+            text_placeholder = change_to_maps = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"]
+            all_original_names.append(text_placeholder)
+            text_placeholder = "(OLD) " + var[0]["values"]["values"][f"{k0}"]["label"] + " " + check_count(var[1]["values"]["values"][f"{k1}"]["label"], "7kjp5pxk")
+            all_changed_names.append(text_placeholder)
+            text_placeholder = check_name(change_to_maps)
+            all_maps_match.append(text_placeholder)
+            all_count.append(check_count_in_int(var[1]["values"]["values"][f"{k1}"]["label"]))
 
+    var = all_variables[5]
+    for k0 in var[0]["values"]["values"]:
+        for k1 in var[1]["values"]["values"]:
+            text_placeholder = "q25q0782" + k0 + k1
+            all_the_ids.append(text_placeholder)
+            text_placeholder = change_to_maps = var[0]["values"]["values"][f"{k0}"]["label"] + " " + var[1]["values"]["values"][f"{k1}"]["label"]
+            all_original_names.append(text_placeholder)
+            text_placeholder = "(OLD) " + var[0]["values"]["values"][f"{k0}"]["label"] + " " + check_count(var[1]["values"]["values"][f"{k1}"]["label"], "q25q0782")
+            all_changed_names.append(text_placeholder)
+            text_placeholder = check_name(change_to_maps)
+            all_maps_match.append(text_placeholder)
+            all_count.append(check_count_in_int(var[1]["values"]["values"][f"{k1}"]["label"]))
+
+    all_the_ids.append("")
+    all_original_names.append("UNKNOWN")
+    all_changed_names.append("UNKNOWN")
+    all_maps_match.append("UNKNOWN")
+    all_count.append(-1)
     exception_names = ["Jenna_0134", "SkittlesCat", "Newbe", "CWANIACZKA", "nfinitiy","Desgxnsz"]
 
     with open("x-redate-requested-runs.json", 'r', encoding='utf-8') as file:
@@ -172,13 +210,11 @@ def main():
     revalidated_runs = all_redate_needed_runs[1]
 
     all_extras_data = []
-    all_extras_data.append(ids)
-    all_extras_data.append(names)
-    all_extras_data.append(old_ids)
-    all_extras_data.append(old_names)
-    all_extras_data.append(old_to_new_match)
-    all_extras_data.append(VIP_ids)
-    all_extras_data.append(VIP_names)
+    all_extras_data.append(all_the_ids)
+    all_extras_data.append(all_original_names)
+    all_extras_data.append(all_changed_names)
+    all_extras_data.append(all_maps_match)
+    all_extras_data.append(all_count)
     all_extras_data.append(deprecated_runs)
     all_extras_data.append(revalidated_runs)
     all_extras_data.append(exception_names)

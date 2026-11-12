@@ -81,14 +81,6 @@ def main():
     all_reg_players_uri = {"https://www.speedrun.com/api/v1/users/8dgrz6g8"}
     all_platforms_uri = {"https://www.speedrun.com/api/v1/platforms/8gej2n93"}  
 
-    with open("x-database.json", 'r', encoding='utf-8') as file:
-        database = json.load(file)
-
-    change_count = 0
-    all_ids = []
-
-    for run in database:
-        all_ids.append(run["id"])
 
     for crun in all_current_runs:
         for l in crun["links"]:
@@ -97,16 +89,6 @@ def main():
         for p in crun["players"]:
             if p["rel"] != "guest":
                 all_reg_players_uri.add(p["uri"])
-        if crun["id"] not in all_ids:
-            database.append(crun)
-            change_count += 1
-            continue
-        if crun != database[all_ids.index(crun["id"])]:
-            database[all_ids.index(crun["id"])] = crun
-            change_count += 1
-
-    if change_count >= 1: print(f"There are {change_count} changes needed, updated ||", time.perf_counter() - start)
-    else: print("0 changes, continue ||", time.perf_counter() - start)
 
     all_reg_players_uri = list(all_reg_players_uri)
     all_reg_players_data = asyncio.run(collect_all_data(mode="known", url_list=all_reg_players_uri))
@@ -139,9 +121,6 @@ def main():
 
     with open("x-data.json", "w") as file:
         json.dump(all_datas, file)
-
-    with open("x-database.json", "w") as file:
-        json.dump(database, file)   
 
     print("finished collecting all players' data ||", time.perf_counter() - start)
 

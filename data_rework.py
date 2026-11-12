@@ -7,7 +7,6 @@ NOW_DATE = datetime.datetime.today()
 TIME_MARGIN_IN_HOURS: int = 24
 REMOVE_DUP_WR_DATE = True
 PRINT_PROGRESS = False #print progress in console for history board
-PRINT_DELETED_RUN = True #print the id of all deleted run in console
 SUB2_EXCEPTION_LIST = ["zqgpe01m", "zqgnl7xm", "z0648v4z", "mrnnx22y", "zxo801ez", "yde1o2wm", "ylr120xy"]
 
 def src_time_to_datetime(txt):
@@ -82,10 +81,9 @@ def set_fastest_time(ctype, count, player, run):
 
   return player
 
-
 def create_new_reworked_run_data(run):
     """
-      ["status"] can be in 8 states ("pending", "verified", "rejected", "deprecated", "orphaned", "VIP" ,"ignored" , "deleted")
+      ["status"] can be in 8 states ("pending", "verified", "rejected", "deprecated", "orphaned", "VIP" , "deleted", "ignored")
       ["category_type"] False = Survivor, True = Beast
     """
     single_run = {}
@@ -94,7 +92,8 @@ def create_new_reworked_run_data(run):
     single_run["category_name"] = ""
     single_run["category_id"] = ""
     single_run["category_type"] = False
-    single_run["count"] = -1
+    single_run["category_map"] = ""
+    single_run["category_count"] = -1
     single_run["time_in_format"] = time_to_text(run["times"]["primary_t"])
     single_run["time_in_seconds"] = run["times"]["primary_t"]
     single_run["placement"] = 0
@@ -170,35 +169,63 @@ def process_runs_and_players(datas, extras, database):
   """
     WARNING!!! All Players Data MUST NOT be sorted in any mean in order to align with the index of the player name and id list that is taken originally
   """
-  all_runs = database
+
+  all_runs = database["run"]
   all_current_runs = datas[0]
   all_players_id = datas[1][0]
   all_players_name = datas[1][1]
   all_players_national = datas[1][2]
   all_platforms = datas[2]
-  all_main_categories_id = extras[0]
-  all_main_categories_name = extras[1]
-  all_old_categories_id = extras[2]
-  all_old_categories_name = extras[3]
-  fixed_old_to_main_id = extras[4]
-  all_VIP_ids = extras[5]
-  all_VIP_names = extras[6]
-  all_deprecated_runs = extras[7]
-  all_revalidated_runs = extras[8]
-  exception_username = extras[9]
+
+  all_categories_IDs = extras[0]
+  all_changed_categories_names = extras[2]
+  all_categories_maps = extras[3]
+  all_categories_counts = extras[4]
+  all_deprecated_runs = extras[5]
+  all_revalidated_runs = extras[6]
+  exception_username = extras[7]
 
   all_reworked_runs = []
   all_reworked_players = []
   all_current_ids = []
-  unknown_verified_deprecated_date_count = 0
+  all_deleted_run_ids = database["del_id"]
+  all_ids = []
+  changelog = ""
+  change_count = 0
   index = 0
 
-  for crun in all_current_runs:
-      all_current_ids.append(crun["id"])
+  changelog += f"{NOW_DATE}"[:19] + " :\n"
 
   for run in all_runs:
+    all_ids.append(run["id"])
+
+  for crun in all_current_runs:
+    all_current_ids.append(crun["id"]) 
+    if crun["id"] not in all_ids:
+      all_runs.append(crun)
+      all_ids.append(crun["id"])
+      changelog += f"- run {crun["id"]} added to database\n"
+      change_count += 1
+      continue
+    run = all_runs[all_ids.index(crun["id"])]
+    if crun != run:
+      if run["status"]["status"] == "new" and crun["status"]["status"] == "verified":
+        changelog += f"- run {crun["id"]} verified\n"
+      elif run["status"]["status"] == "new" and crun["status"]["status"] == "rejected":
+        changelog += f"- run {crun["id"]} rejected\n"
+      elif run["category"] != crun["category"]:
+        if crun["category"] == "7kjp5pxk" or crun["category"] == "q25q0782":
+          changelog += f"- run {crun["id"]} deprecated\n"
+        else:
+          changelog += f"- run {crun["id"]} moved to another category\n"
+      else:
+        changelog += f"- run {crun["id"]} changed in database\n"
+      all_runs[all_ids.index(crun["id"])] = crun
+      change_count += 1
+      continue
+ 
+  for run in all_runs:
       index += 1
-      #print(run)
       new_run = create_new_reworked_run_data(run)
       new_run["position"] = index
       new_run["platform"] = all_platforms[1][all_platforms[0].index(run["system"]["platform"])]
@@ -206,24 +233,22 @@ def process_runs_and_players(datas, extras, database):
       if run["category"] == "7dg6l4gk":
         if "ylqmzpmn" in run["values"] and "gnxvz4jl" in run["values"]:
           new_run["category_id"] = "7dg6l4gk" + run["values"]["ylqmzpmn"] + run["values"]["gnxvz4jl"]
-          new_run["category_name"] = all_main_categories_name[all_main_categories_id.index(new_run["category_id"])]
+          new_run["category_name"] = all_changed_categories_names[all_categories_IDs.index(new_run["category_id"])]
         else:
-          new_run["category_id"] = "0x11111111"
           new_run["category_name"] = "UNKNOWN NAME"
           new_run["status"].append("orphaned")
         new_run["category_type"] = False
       elif run["category"] == "n2yg8772":
         if "9l774k9l" in run["values"] and "yn259g0n" in run["values"]:
           new_run["category_id"] = "n2yg8772" + run["values"]["9l774k9l"] + run["values"]["yn259g0n"]
-          new_run["category_name"] = all_main_categories_name[all_main_categories_id.index(new_run["category_id"])]
+          new_run["category_name"] = all_changed_categories_names[all_categories_IDs.index(new_run["category_id"])]
         else:
-          new_run["category_id"] = "0x11111111"
           new_run["category_name"] = "UNKNOWN NAME"
           new_run["status"].append("orphaned")
         new_run["category_type"] = True
       elif run["category"] == "wk65l5e2":
         new_run["category_id"] = run["values"]["onvymwrn"] + run["values"]["ql695jxl"] + run["values"]["ylpk42v8"]
-        new_run["category_name"] = all_main_categories_name[all_main_categories_id.index(new_run["category_id"])]
+        new_run["category_name"] = new_run["category_name"] = all_changed_categories_names[all_categories_IDs.index(new_run["category_id"])]
         if "q6504o3l" in new_run["category_id"]:
           new_run["category_type"] = True
         else:
@@ -232,43 +257,40 @@ def process_runs_and_players(datas, extras, database):
         new_run["status"].append("deprecated")
         new_run["category_type"] = False
         if "wlewoo4l" in run["values"] and "38dooe0l" in run["values"]:
-          new_run["category_id"] = run["values"]["wlewoo4l"] + run["values"]["38dooe0l"]
-          new_run["category_name"] = all_old_categories_name[all_old_categories_id.index(new_run["category_id"])]
-          new_run["category_id"] = fixed_old_to_main_id[all_old_categories_id.index(new_run["category_id"])]
-          if new_run["category_id"] in all_old_categories_id :
-            new_run["category_name"] = "UNKNOWN NAME"
-            new_run["status"].append("ignored") 
+          new_run["category_id"] = "7kjp5pxk" + run["values"]["wlewoo4l"] + run["values"]["38dooe0l"]
+          new_run["category_name"] = all_changed_categories_names[all_categories_IDs.index(new_run["category_id"])]
+          if "jqzwvn8q" in new_run["category_id"] or "jqzve62l" in new_run["category_id"]:
+            new_run["status"].append("ignored")
         else :
-          new_run["category_id"] = "0x11111111"
           new_run["category_name"] = "UNKNOWN NAME"
           new_run["status"].append("orphaned")
       elif run["category"] == "q25q0782":
         new_run["status"].append("deprecated")
         new_run["category_type"] = True
         if "wl31kkv8" in run["values"] and "gnx003xn" in run["values"]:
-          new_run["category_id"] = run["values"]["wl31kkv8"] + run["values"]["gnx003xn"]
-          new_run["category_name"] = all_old_categories_name[all_old_categories_id.index(new_run["category_id"])]
-          new_run["category_id"] = fixed_old_to_main_id[all_old_categories_id.index(new_run["category_id"])]
-          if new_run["category_id"] in all_old_categories_id :
-            new_run["category_name"] = "UNKNOWN NAME"
+          new_run["category_id"] = "q25q0782" + run["values"]["wl31kkv8"] + run["values"]["gnx003xn"]
+          new_run["category_name"] = all_changed_categories_names[all_categories_IDs.index(new_run["category_id"])]
+          if "5lme8rmq" in new_run["category_id"] or "klrj4z2q" in new_run["category_id"]:
             new_run["status"].append("ignored")
         else :
-          new_run["category_id"] = "0x11111111"
           new_run["category_name"] = "UNKNOWN NAME"
           new_run["status"].append("orphaned")
       else:
         if "2lgr2o6n" in run["values"] and "5lyjjegl" in run["values"]:
           new_run["category_id"] = run["values"]["78965r58"] + run["values"]["2lgr2o6n"] + run["values"]["5lyjjegl"]
-          new_run["category_name"] = "(VIP) " + all_VIP_names[all_VIP_ids.index(new_run["category_id"])]
+          new_run["category_name"] = all_changed_categories_names[all_categories_IDs.index(new_run["category_id"])]
           new_run["status"].append("VIP")
           if "z19ymjkl" in new_run["category_id"]:
             new_run["category_type"] = True
           else:
             new_run["category_type"] = False
         else :
-          new_run["category_id"] = "0x11111111"
           new_run["category_name"] = "UNKNOWN NAME"
           new_run["status"].append("orphaned")
+
+      new_run["category_count"] = all_categories_counts[all_categories_IDs.index(new_run["category_id"])]
+      new_run["category_map"] = all_categories_maps[all_categories_IDs.index(new_run["category_id"])]
+      new_run["category_count"] = text_to_number(new_run["category_name"])
 
       if run["status"]["status"] == "new" :
         new_run["status"] = ["pending"]
@@ -289,13 +311,14 @@ def process_runs_and_players(datas, extras, database):
       if new_run["run_id"] in all_deprecated_runs:
         new_run["deprecated_date"] = all_deprecated_runs[f"{new_run["run_id"]}"]
         new_run["status"].append("deprecated")
-        unknown_verified_deprecated_date_count -= 1
       if new_run["run_id"] in all_revalidated_runs:
         new_run["validated_date"] = all_revalidated_runs[f"{new_run["run_id"]}"]
       if new_run["run_id"] not in all_current_ids:
         new_run["status"].append("deleted")
-
-      new_run["count"] = text_to_number(new_run["category_name"])
+        if new_run["run_id"] not in all_deleted_run_ids:
+          all_deleted_run_ids.append(new_run["run_id"])
+          changelog += f"- run {crun["id"]} deleted\n"
+          change_count += 1
 
       for player in run["players"]:
         if player["rel"] == "user":
@@ -317,13 +340,9 @@ def process_runs_and_players(datas, extras, database):
       elif "rejected" in new_run["status"] and "orphaned" not in new_run["status"]:
         new_run["placement"] = "rejected"
       else:
-        pass
-      
+        pass      
       if "deleted" in new_run["status"]:
         new_run["placement"] = "deleted"
-        if PRINT_DELETED_RUN :
-          print(f"Deleted run detected, id {new_run["run_id"]}")
-
       if "links" in run["videos"]:
         new_run["run_footage"] = run["videos"]["links"][0]["uri"]
       else:
@@ -339,7 +358,18 @@ def process_runs_and_players(datas, extras, database):
       new_player["nationality"] = all_players_national[all_players_name.index(player)]
       all_reworked_players.append(new_player)
 
-  return all_reworked_runs, all_reworked_players, unknown_verified_deprecated_date_count
+  if change_count > 0:
+    print(f">> There are {change_count} change(s) in the database, updated")
+    with open("changelog.txt", "a") as file:
+      file.write(changelog)
+  else:
+    print(">> There are 0 changes in the database, continue")
+
+  database = {"run" : [], "del_id": []}
+  database["run"] = all_runs
+  database["del_id"] = all_deleted_run_ids
+
+  return all_reworked_runs, all_reworked_players, database
 
 def default_player_info_update(plif, run):
   
@@ -370,7 +400,7 @@ def get_current_data(reworked: list, datas: list):
   previous_time_list = []
 
   for run in all_runs:
-    if "ignored" in run["status"] or "orphaned" in run["status"] or "rejected" in run["status"] or "pending" in run["status"] or "deleted" in run["status"]:
+    if "orphaned" in run["status"] or "rejected" in run["status"] or "pending" in run["status"] or "deleted" in run["status"] or "ignored" in run["status"]:
       continue
     
     if "deprecated" in run["status"]:
@@ -425,13 +455,13 @@ def get_current_data(reworked: list, datas: list):
             player_info["3rd_place_runs"].append(run)
             player_info["3rd_place_runs_in_simple_format"].append(simplify_run_to_format(run))
           if not run["category_type"] :
-            set_fastest_time(run["category_type"], run["count"], player_info, run)
+            set_fastest_time(run["category_type"], run["category_count"], player_info, run)
             if run["placement"] == 1:
               player_info["survivor_wrs"] += 1
               player_info["survivor_wrs_list"].append(run)
               player_info["survivor_wrs_list_in_simple_format"].append(simplify_run_to_format(run))
           else:
-            set_fastest_time(run["category_type"], run["count"], player_info, run)
+            set_fastest_time(run["category_type"], run["category_count"], player_info, run)
             if run["placement"] == 1:
               player_info["beast_wrs"] += 1
               player_info["beast_wrs_list"].append(run)
@@ -619,30 +649,28 @@ def main():
       extra_datas = json.load(file)
 
   """
-    [0] -> All the valid reworked runs (no orphaned, no VIP and no unknown map)
-    [1] -> All the names in the sub-categories
-    [2] -> All the IDs in the Old category (Survivor Old & Beast Old)
-    [3] -> All the names in the old sub-categories, reworked to fit the main one
-    [4] -> The fitting IDs for the old sub-categories
-    [5] -> All the IDs in the VIP category
-    [6] -> All the names in the VIP category
-    [7] -> Deprecated Runs start date and end date (run in the Old categories, will be very important for preserving history)
-    [8] -> Revalidated Runs for runs that both the date and the deprecated date is in between the date and the verified date (aka late verifying for reasons)
-    [9] -> extra names
+    [0] -> All the reworked IDs of all the categories 
+    [1] -> All the names corresponding to the cateegories based on IDs
+    [2] -> All the changed names
+    [3] -> All the map corresponding to the cateegories based on IDs
+    [4] -> Run count tied to each categories
+    [5] -> All the deprecated runs' IDs that need redate
+    [6] -> All the validated runs' IDs that need redate
+    [7] -> Extra names
   """
 
   with open("x-database.json", 'r', encoding='utf-8') as file:
       database = json.load(file)
   """
     ["run"] : All the runs in the database as of 7/11/2026
-    ["id"] : All the ids in the database as of 7/11/2026
+    ["del_id"] : All the deleted runs' ids in the database as of 7/11/2026
   """
 
   reworked_datas = process_runs_and_players(all_datas, extra_datas, database)
   """
     [0] -> All reworked runs
     [1] -> All the reworked players
-    [2] -> Unknown Verified Deprecated Date Count #[deprecated method, do not use]
+    [2] -> The database
   """
 
   current_datas = get_current_data(reworked_datas, all_datas)
@@ -655,8 +683,8 @@ def main():
 
   print("finished formatting datas ||", time.perf_counter() - start)
 
-  #with open("test-data.json", "w") as file:
-  #  json.dump(all_stats_over_time[1], file)
+  with open("x-database.json", "w") as file:
+    json.dump(reworked_datas[2], file)
 
   return all_datas, extra_datas, reworked_datas, current_datas, all_stats_over_time
 
