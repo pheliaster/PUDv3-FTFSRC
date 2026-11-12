@@ -195,6 +195,7 @@ def process_runs_and_players(datas, extras, database):
   index = 0
 
   changelog += f"{NOW_DATE}"[:19] + " :\n"
+  skip_log = False
 
   for run in all_runs:
     all_ids.append(run["id"])
@@ -211,15 +212,33 @@ def process_runs_and_players(datas, extras, database):
     if crun != run:
       if run["status"]["status"] == "new" and crun["status"]["status"] == "verified":
         changelog += f"- run {crun["id"]} verified\n"
+        skip_log = True
       elif run["status"]["status"] == "new" and crun["status"]["status"] == "rejected":
         changelog += f"- run {crun["id"]} rejected\n"
-      elif run["category"] != crun["category"]:
+        skip_log = True
+
+      if run["category"] != crun["category"]:
+        skip_log = True
         if crun["category"] == "7kjp5pxk" or crun["category"] == "q25q0782":
           changelog += f"- run {crun["id"]} deprecated\n"
         else:
           changelog += f"- run {crun["id"]} moved to another category\n"
-      else:
+      if run["comment"] != crun["comment"]:
+        skip_log = True
+        changelog += f"- run {crun["id"]} comment(s) changed\n"
+      if run["date-time"] != crun["date-time"]:
+        skip_log = True
+        changelog += f"- run {crun["id"]} date of run changed\n"
+      if run["players"] != crun["players"]:
+        skip_log = True
+        changelog += f"- run {crun["id"]} players changed\n"
+      if run["times"]["primary_t"] != crun["times"]["primary_t"]:
+        skip_log = True
+        changelog += f"- run {crun["id"]} runtime changed\n"
+      if not skip_log:
         changelog += f"- run {crun["id"]} changed in database\n"
+
+
       all_runs[all_ids.index(crun["id"])] = crun
       change_count += 1
       continue
